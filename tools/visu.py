@@ -8,6 +8,7 @@
 import numpy as np
 import glob
 import h5py
+from numpy.core.arrayprint import printoptions
 try:
     import rospy
     from sensor_msgs.msg import PointCloud2
@@ -21,7 +22,7 @@ except ImportError:
 
 # settings
 # change input path here
-PATH = "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/test_01/2018-11-29_104141_Static2-FogB/"
+PATH = "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/2018-11-29_145021_Static1-Day-Clear/"
 COLOR_LABEL_MAPPING = {
     0: [0, 0, 0],       # no lable
     100: [0, 0, 0],     # valid / clear
@@ -53,6 +54,7 @@ class RosPublisher:
         self.distance_m_1 = None
         self.intensity_1 = None
         self.labels_1 = None
+        # 读入数据格式 array 32 * 400
 
     def get_rgb(self, labels):
         """returns color coding according to input labels """
@@ -99,6 +101,8 @@ class RosPublisher:
 
         cloud = pc2.create_cloud(header, fields, points)
         self.ros_publisher.publish(cloud)
+
+
 
     def load_hdf5_file(self, filename):
         """load one single hdf5 file with point cloud data
