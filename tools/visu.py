@@ -9,6 +9,7 @@ import numpy as np
 import glob
 import h5py
 from numpy.core.arrayprint import printoptions
+from numpy.lib.function_base import select
 try:
     import rospy
     from sensor_msgs.msg import PointCloud2
@@ -101,6 +102,7 @@ class RosPublisher:
 
         cloud = pc2.create_cloud(header, fields, points)
         self.ros_publisher.publish(cloud)
+
 
 
 
