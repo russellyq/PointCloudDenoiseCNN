@@ -1,8 +1,3 @@
-from numpy.core import einsumfunc
-from numpy.lib import utils
-from numpy.lib.type_check import imag
-from torch._C import dtype
-from torch.nn.modules import module
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,6 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from dataset_utils import DeNoiseDataset
 from weathnet import WeatherNet
 from utils import mIoU
+from torch.autograd import Variable
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
@@ -50,7 +46,7 @@ def main(opt):
         # train
         for i, data in enumerate(train_dataloader, 0):
             images, labels = data
-            images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
+            images, labels = Variable(images.to(DEVICE, dtype=torch.float)), Variable(labels.to(DEVICE, dtype=torch.long))
             optimizer.zero_grad()
 
             prediction = model(images)
@@ -73,11 +69,12 @@ def main(opt):
             prediction = model(images)
             loss = criterion(prediction, labels)
             valid_loss += loss.item()
-            
+
             if min_valid_loss > valid_loss:
                 print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
                 save_name = 'saved_model_' +str(epoch) + '_.pth'
                 torch.save(model.state_dict(), save_name)
+
         # test
         clear_mIoU, rain_mIoU, fog_mIoU = 0.0, 0.0, 0.0
         number = 0
