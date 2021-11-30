@@ -23,7 +23,7 @@ class LiLaBlock(nn.Module):
 
 
 class WeatherNet(nn.Module):
-    def __init__(self, C_in=5, C_out=3):
+    def __init__(self, C_in=2, C_out=1):
         super().__init__()
         self.lilablock1 = LiLaBlock(C_in, 32)
         self.lilablock2 = LiLaBlock(32, 64)

@@ -11,7 +11,7 @@ from weathnet import WeatherNet
 from utils import mIoU
 from torch.autograd import Variable
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda')        
@@ -38,6 +38,8 @@ def main(opt):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=4e-18, betas=(0.9, 0.999), eps=1e-8)
 
+    size = len(train_dataloader)
+
     for epoch in range(opt.epochs):
         running_loss = 0.0
         valid_loss = 0.0
@@ -57,7 +59,8 @@ def main(opt):
             running_loss += loss.item()
 
             if i % 100 == 99:    # print every 100 mini-batches
-                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss))
+                current = i * len(images)
+                print('Epoch:%d, [%5d, / %5d] loss: %.3f' % (epoch + 1, current, size, running_loss))
                 running_loss = 0.0
 
         # validation
@@ -85,14 +88,16 @@ def main(opt):
                 images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
 
                 predictions = model(images)
+
                 labels = labels.cpu().detach().numpy()
                 predictions = predictions.cpu().detach().numpy()
 
-                for image, prediction in zip(images, predictions):
-                    clear_mIoU += mIoU(image, prediction, 'clear')
-                    rain_mIoU += mIoU(image, prediction, 'rain')
-                    fog_mIoU += mIoU(image, prediction, 'fog')
+                for prediction, label in zip(predictions, labels):
+                    clear_mIoU += mIoU(prediction, label, 'clear')
+                    rain_mIoU += mIoU(prediction, label, 'rain')
+                    fog_mIoU += mIoU(prediction, label, 'fog')
                     number += 1
+
         clear_mIoU, rain_mIoU, fog_mIoU = clear_mIoU / number, rain_mIoU / number, fog_mIoU / number
         print('[%d] acc: %.3f, %.3f, %.3f' % (epoch + 1, clear_mIoU, rain_mIoU, fog_mIoU))
 

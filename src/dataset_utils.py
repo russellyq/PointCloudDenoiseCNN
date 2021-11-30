@@ -21,7 +21,7 @@ def get_file_list(root_dir_list):
     return file_list
 
 def normalize(x):
-    return (x-np.min(x))/(np.max(x)-np.min(x))
+    return ( 255 * (x-np.min(x)) / (np.max(x)-np.min(x)) ).astype(np.uint8)
 
 class DeNoiseDataset(Dataset):
     def __init__(self, mode, transform=None):
@@ -45,9 +45,9 @@ class DeNoiseDataset(Dataset):
 
     def __getitem__(self, idx):
         file_path = self.file_list[idx]
-        sensorX_1, sensorY_1, sensorZ_1, distance_m_1, intensity_1, labels_1 = self.load_hdf5_file(file_path)
-        image =  np.concatenate((sensorX_1, sensorY_1, sensorZ_1, distance_m_1, intensity_1)).reshape((5,32,400)).astype(np.float32)
-        label = labels_1.astype(np.float32)
+        distance_m_1, intensity_1, labels_1 = self.load_hdf5_file(file_path)
+        image =  np.concatenate((distance_m_1, intensity_1)).reshape((2,32,400))
+        label = labels_1.astype(np.uint8)
 
         # if self.transform:
         #     sample = self.transform(sample)
@@ -57,21 +57,20 @@ class DeNoiseDataset(Dataset):
     def load_hdf5_file(self, filename):
         with h5py.File(filename, "r", driver='core') as hdf5:
             # for channel in self.channels:
-            sensorX_1 = hdf5.get('sensorX_1')[()]
-            sensorY_1 = hdf5.get('sensorY_1')[()]
-            sensorZ_1 = hdf5.get('sensorZ_1')[()]
+            # sensorX_1 = hdf5.get('sensorX_1')[()]
+            # sensorY_1 = hdf5.get('sensorY_1')[()]
+            # sensorZ_1 = hdf5.get('sensorZ_1')[()]
             distance_m_1 = hdf5.get('distance_m_1')[()]
             intensity_1 = hdf5.get('intensity_1')[()]
             labels_1 = hdf5.get('labels_1')[()]
 
-        sensorX_1 = normalize(sensorX_1)
-        sensorY_1 = normalize(sensorY_1)
-        sensorZ_1 = normalize(sensorZ_1)
+        # sensorX_1 = normalize(sensorX_1)
+        # sensorY_1 = normalize(sensorY_1)
+        # sensorZ_1 = normalize(sensorZ_1)
         distance_m_1 = normalize(distance_m_1)
         intensity_1 = normalize(intensity_1)
         labels_1 -= 99
 
 
-        return sensorX_1, sensorY_1, sensorZ_1,  \
-               distance_m_1, intensity_1, labels_1
+        return distance_m_1, intensity_1, labels_1
 
