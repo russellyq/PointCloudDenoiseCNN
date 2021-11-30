@@ -69,7 +69,7 @@ class DeNoiseDataset(Dataset):
         sensorZ_1 = normalize(sensorZ_1)
         distance_m_1 = normalize(distance_m_1)
         intensity_1 = normalize(intensity_1)
-        labels_1 -= 100
+        labels_1 -= 99
 
 
         return sensorX_1, sensorY_1, sensorZ_1,  \

@@ -49,9 +49,10 @@ def main(opt):
             images, labels = Variable(images.to(DEVICE, dtype=torch.float)), Variable(labels.to(DEVICE, dtype=torch.long))
             optimizer.zero_grad()
 
-            prediction = model(images)
-            loss = criterion(prediction, labels)
+            predictions = model(images)
+            loss = criterion(predictions, labels)
             loss.backward()
+
             optimizer.step()
             running_loss += loss.item()
 
@@ -66,13 +67,13 @@ def main(opt):
             images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
             optimizer.zero_grad()
 
-            prediction = model(images)
-            loss = criterion(prediction, labels)
+            predictions = model(images)
+            loss = criterion(predictions, labels)
             valid_loss += loss.item()
 
             if min_valid_loss > valid_loss:
                 print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
-                save_name = 'saved_model_' +str(epoch) + '_.pth'
+                save_name = '../checkpoints/saved_model_' +str(epoch) + '_.pth'
                 torch.save(model.state_dict(), save_name)
 
         # test
@@ -83,7 +84,7 @@ def main(opt):
                 images, labels = data
                 images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
 
-                prediction = model(images)
+                predictions = model(images)
                 labels = labels.cpu().detach().numpy()
                 predictions = predictions.cpu().detach().numpy()
 
