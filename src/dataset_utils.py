@@ -72,5 +72,15 @@ class DeNoiseDataset(Dataset):
         labels_1 -= 99
 
 
-        return distance_m_1, intensity_1, labels_1
+        return distance_m_1, intensity_1, process_label(labels_1)
 
+def process_label(labels):
+    process_labels = []
+    for label in labels:
+        if label == 0 or label == 100:
+            process_labels.append(0)
+        elif label == 101:
+            process_labels.append(1)
+        else:
+            process_labels.append(2)
+    return np.array(process_labels).reshape((32, 400))
