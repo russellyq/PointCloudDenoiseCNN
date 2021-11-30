@@ -52,7 +52,7 @@ class DeNoiseDataset(Dataset):
         # if self.transform:
         #     sample = self.transform(sample)
 
-        return torch.from_numpy(image), torch.from_numpy(label)
+        return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
     
     def load_hdf5_file(self, filename):
         with h5py.File(filename, "r", driver='core') as hdf5:

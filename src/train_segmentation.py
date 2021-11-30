@@ -48,7 +48,7 @@ def main(opt):
         # train
         for i, data in enumerate(train_dataloader, 0):
             images, labels = data
-            images, labels = Variable(images.to(DEVICE)), Variable(labels.to(DEVICE))
+            images, labels = Variable(images.to(DEVICE, dtype=torch.float)), Variable(labels.to(DEVICE, dtype=torch.long))
             optimizer.zero_grad()
 
             predictions = model(images)
@@ -67,7 +67,7 @@ def main(opt):
         model.eval()
         for i, data in enumerate(val_dataloader, 0):
             images, labels = data
-            images, labels = images.to(DEVICE), labels.to(DEVICE)
+            images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
             optimizer.zero_grad()
 
             predictions = model(images)
@@ -85,7 +85,7 @@ def main(opt):
         with torch.no_grad():
             for i, data in enumerate(test_dataloader, 0):
                 images, labels = data
-                images, labels = images.to(DEVICE), labels.to(DEVICE)
+                images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
 
                 predictions = model(images)
 
