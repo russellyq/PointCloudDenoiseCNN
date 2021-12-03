@@ -23,21 +23,21 @@ class LiLaBlock(nn.Module):
 
 
 class WeatherNet(nn.Module):
-    def __init__(self, C_in=2, C_out=3):
+    def __init__(self, C_in=2, C_out=3, p_rate=0.5):
         super().__init__()
         self.lilablock1 = LiLaBlock(C_in, 32)
         self.lilablock2 = LiLaBlock(32, 64)
         self.lilablock3 = LiLaBlock(64, 96)
         self.lilablock4 = LiLaBlock(96, 96)
-        self.drop = nn.Dropout(p=0.5)
+        self.drop = nn.Dropout(p=p_rate)
         self.lilablock5 = LiLaBlock(96, 64)
         self.conv = nn.Conv2d(64, C_out, (1, 1))
     
     def forward(self, img):
-        x = self.lilablock1.forward(img)
-        x = self.lilablock2.forward(x)
-        x = self.lilablock3.forward(x)
-        x = self.lilablock4.forward(x)
+        x = self.lilablock1(img)
+        x = self.lilablock2(x)
+        x = self.lilablock3(x)
+        x = self.lilablock4(x)
         x = self.drop(x)
-        x = self.lilablock5.forward(x)
+        x = self.lilablock5(x)
         return F.relu(self.conv(x))

@@ -24,7 +24,8 @@ def normalize(x):
     return ( 255 * (x-np.min(x)) / (np.max(x)-np.min(x)) ).astype(np.uint8)
 
 class DeNoiseDataset(Dataset):
-    def __init__(self, mode, transform=None):
+    def __init__(self, mode, x_transform=None, y_transform=None):
+
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -38,7 +39,8 @@ class DeNoiseDataset(Dataset):
             self.file_list = get_file_list(TEST_ROOT_DIR_LIST)
         else:
             self.file_list = get_file_list(VAL_ROOT_DIR_LIST)
-        self.transform = transform
+        self.x_transform = x_transform
+        self.y_transform = y_transform
 
     def __len__(self):
         return len(self.file_list)
@@ -49,10 +51,13 @@ class DeNoiseDataset(Dataset):
         image =  np.concatenate((distance_m_1, intensity_1)).reshape((2,32,400))
         label = labels_1.astype(np.uint8)
 
-        # if self.transform:
-        #     sample = self.transform(sample)
-
-        return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
+        if self.x_transform is not None:
+            image = self.x_transform(image)
+        if self.y_transform is not None:
+            label = self.y_transform(label)
+        
+        return image, label
+        #return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
     
     def load_hdf5_file(self, filename):
         with h5py.File(filename, "r", driver='core') as hdf5:

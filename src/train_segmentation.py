@@ -10,6 +10,7 @@ from dataset_utils import DeNoiseDataset
 from weathnet import WeatherNet
 from utils import mIoU
 from torch.autograd import Variable
+from torchvision.transforms import transforms
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
@@ -18,13 +19,29 @@ if torch.cuda.is_available():
 else:
     DEVICE = torch.device('cpu')
 
+result_path= './result.txt'
+if os.path.exists(result_path):
+    os.remove(result_path)
 
 def main(opt):
 
+    x_transforms = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+
+    # mask只需要转换为tensor
+    y_transforms = transforms.Compose([
+        transforms.ToTensor()
+    ])
+
     # lodar dataset & dataloader
-    train_dataloader = DataLoader(DeNoiseDataset(mode='train'), batch_size=opt.batch_size, shuffle=True)
-    test_dataloader = DataLoader(DeNoiseDataset(mode='test'), batch_size=opt.batch_size, shuffle=True)
-    val_dataloader = DataLoader(DeNoiseDataset(mode='val'), batch_size=opt.batch_size, shuffle=True)
+    train_dataset = DeNoiseDataset(mode='train', x_transform=x_transforms, y_transform=y_transforms)
+    test_dataset = DeNoiseDataset(mode='test', x_transform=x_transforms, y_transform=y_transforms)
+    val_dataset = DeNoiseDataset(mode='val', x_transform=x_transforms, y_transform=y_transforms)
+
+    train_dataloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=True)
 
     # network
     model = WeatherNet()
@@ -38,12 +55,12 @@ def main(opt):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=4e-18, betas=(0.9, 0.999), eps=1e-8)
 
-    size = len(train_dataloader)
+    min_valid_loss = np.inf
 
     for epoch in range(opt.epochs):
-        running_loss = 0.0
+        train_loss = 0.0
         valid_loss = 0.0
-        min_valid_loss = np.inf
+        
 
         # train
         for i, data in enumerate(train_dataloader, 0):
@@ -52,16 +69,25 @@ def main(opt):
             optimizer.zero_grad()
 
             predictions = model(images)
+
+            print('output:', predictions.shape)
+            print('labels:', labels.shape)
+
             loss = criterion(predictions, labels)
             loss.backward()
-
             optimizer.step()
-            running_loss += loss.item()
 
-            if i % 100 == 99:    # print every 100 mini-batches
-                current = i * len(images)
-                print('Epoch:%d, [%5d, / %5d] loss: %.3f' % (epoch + 1, current, size, running_loss))
-                running_loss = 0.0
+            train_loss += loss.cpu().item()*labels.size(0)
+
+            if i % 100 ==0:
+                print("epoch:%d, %d/%d, train_loss:%0.3f" % (epoch+1, i+1, (len(train_dataset) - 1) // opt.batch_size + 1, loss.cpu().item()*labels.size(0)))
+        
+        train_loss /= len(train_dataset)
+        print('\nepoch:{}, train_loss:{:.4f}'.format(epoch+1, train_loss))
+        with open(result_path, 'a') as f:
+            f.write('\n epoch:{}, train_loss:{:.4f}'.format(epoch+1, train_loss))
+            f.close()
+
 
         # validation
         model.eval()
@@ -72,34 +98,44 @@ def main(opt):
 
             predictions = model(images)
             loss = criterion(predictions, labels)
-            valid_loss += loss.item()
+            valid_loss += loss.cpu().item()*labels.size(0)
 
-            if min_valid_loss > valid_loss:
-                print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
-                save_name = '../checkpoints/saved_model_' +str(epoch) + '_.pth'
-                torch.save(model.state_dict(), save_name)
+            if i % 100 ==0:
+                print("epoch:%d, %d/%d, val_loss:%0.3f" % (epoch+1, i+1, (len(val_dataset) - 1) // opt.batch_size + 1, loss.cpu().item()*labels.size(0)))
 
-        # test
-        clear_mIoU, rain_mIoU, fog_mIoU = 0.0, 0.0, 0.0
-        number = 0
-        with torch.no_grad():
-            for i, data in enumerate(test_dataloader, 0):
-                images, labels = data
-                images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
+        valid_loss /= len(val_dataset)
+        print('\nepoch:{}, val_loss:{:.4f}'.format(epoch+1, valid_loss))
+        with open(result_path, 'a') as f:
+            f.write('\n epoch:{}, val_loss:{:.4f}'.format(epoch+1, valid_loss))
+            f.close()
+        
+        if min_valid_loss > valid_loss:
+            min_valid_loss = valid_loss
+            print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
+            save_name = '../checkpoints/saved_model_' +str(epoch) + '_.pth'
+            torch.save(model.state_dict(), save_name)
 
-                predictions = model(images)
+        # # test
+        # clear_mIoU, rain_mIoU, fog_mIoU = 0.0, 0.0, 0.0
+        # number = 0
+        # with torch.no_grad():
+        #     for i, data in enumerate(test_dataloader, 0):
+        #         images, labels = data
+        #         images, labels = images.to(DEVICE, dtype=torch.float), labels.to(DEVICE, dtype=torch.long)
 
-                labels = labels.cpu().detach().numpy()
-                predictions = predictions.cpu().detach().numpy()
+        #         predictions = model(images)
 
-                for prediction, label in zip(predictions, labels):
-                    clear_mIoU += mIoU(prediction, label, 'clear')
-                    rain_mIoU += mIoU(prediction, label, 'rain')
-                    fog_mIoU += mIoU(prediction, label, 'fog')
-                    number += 1
+        #         labels = labels.cpu().detach().numpy()
+        #         predictions = predictions.cpu().detach().numpy()
 
-        clear_mIoU, rain_mIoU, fog_mIoU = clear_mIoU / number, rain_mIoU / number, fog_mIoU / number
-        print('[%d] acc: %.3f, %.3f, %.3f' % (epoch + 1, clear_mIoU, rain_mIoU, fog_mIoU))
+        #         for prediction, label in zip(predictions, labels):
+        #             clear_mIoU += mIoU(prediction, label, 'clear')
+        #             rain_mIoU += mIoU(prediction, label, 'rain')
+        #             fog_mIoU += mIoU(prediction, label, 'fog')
+        #             number += 1
+
+        # clear_mIoU, rain_mIoU, fog_mIoU = clear_mIoU / number, rain_mIoU / number, fog_mIoU / number
+        # print('[%d] acc: %.3f, %.3f, %.3f' % (epoch + 1, clear_mIoU, rain_mIoU, fog_mIoU))
 
 
 if __name__ == "__main__":
