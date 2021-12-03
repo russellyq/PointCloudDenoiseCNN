@@ -92,7 +92,7 @@ def main(opt):
             loss = criterion(predictions, labels)
             valid_loss += loss.cpu().item()*labels.size(0)
 
-            if i % 100 ==0:
+            if i % 100 ==99:
                 print("epoch:%d, %d/%d, val_loss:%0.3f" % (epoch+1, i+1, (len(val_dataset) - 1) // opt.batch_size + 1, loss.cpu().item()*labels.size(0)))
 
         valid_loss /= len(val_dataset)

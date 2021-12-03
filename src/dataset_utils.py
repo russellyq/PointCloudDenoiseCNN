@@ -4,6 +4,14 @@ from torch.utils.data import Dataset
 import h5py
 import os
 
+# TRAIN_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/train_01/",
+#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_02/",
+#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_01/",
+#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_02/"]
+# TEST_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/test_01/"]
+# VAL_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/val_01/"]
+
+
 TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/",
                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_02/",
                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_01/",
