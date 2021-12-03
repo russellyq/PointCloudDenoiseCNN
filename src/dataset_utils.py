@@ -24,7 +24,7 @@ def normalize(x):
     return ( 255 * (x-np.min(x)) / (np.max(x)-np.min(x)) ).astype(np.uint8)
 
 class DeNoiseDataset(Dataset):
-    def __init__(self, mode, x_transform=None, y_transform=None):
+    def __init__(self, mode):
 
         """
         Args:
@@ -39,8 +39,7 @@ class DeNoiseDataset(Dataset):
             self.file_list = get_file_list(TEST_ROOT_DIR_LIST)
         else:
             self.file_list = get_file_list(VAL_ROOT_DIR_LIST)
-        self.x_transform = x_transform
-        self.y_transform = y_transform
+
 
     def __len__(self):
         return len(self.file_list)
@@ -51,13 +50,7 @@ class DeNoiseDataset(Dataset):
         image =  np.concatenate((distance_m_1, intensity_1)).reshape((2,32,400))
         label = labels_1.astype(np.uint8)
 
-        if self.x_transform is not None:
-            image = self.x_transform(image)
-        if self.y_transform is not None:
-            label = self.y_transform(label)
-        
-        return image, label
-        #return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
+        return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
     
     def load_hdf5_file(self, filename):
         with h5py.File(filename, "r", driver='core') as hdf5:
@@ -74,14 +67,12 @@ class DeNoiseDataset(Dataset):
         # sensorZ_1 = normalize(sensorZ_1)
         distance_m_1 = normalize(distance_m_1)
         intensity_1 = normalize(intensity_1)
-        labels_1 -= 99
-
-
+        # labels_1 -= 99
         return distance_m_1, intensity_1, process_label(labels_1)
 
 def process_label(labels):
     process_labels = []
-    for label in labels:
+    for label in labels.flatten():
         if label == 0 or label == 100:
             process_labels.append(0)
         elif label == 101:

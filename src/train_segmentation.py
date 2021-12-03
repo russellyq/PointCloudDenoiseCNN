@@ -25,19 +25,11 @@ if os.path.exists(result_path):
 
 def main(opt):
 
-    x_transforms = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-
-    # mask只需要转换为tensor
-    y_transforms = transforms.Compose([
-        transforms.ToTensor()
-    ])
 
     # lodar dataset & dataloader
-    train_dataset = DeNoiseDataset(mode='train', x_transform=x_transforms, y_transform=y_transforms)
-    test_dataset = DeNoiseDataset(mode='test', x_transform=x_transforms, y_transform=y_transforms)
-    val_dataset = DeNoiseDataset(mode='val', x_transform=x_transforms, y_transform=y_transforms)
+    train_dataset = DeNoiseDataset(mode='train')
+    test_dataset = DeNoiseDataset(mode='test')
+    val_dataset = DeNoiseDataset(mode='val')
 
     train_dataloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=True)
@@ -79,7 +71,7 @@ def main(opt):
 
             train_loss += loss.cpu().item()*labels.size(0)
 
-            if i % 100 ==0:
+            if i % 100 == 99:
                 print("epoch:%d, %d/%d, train_loss:%0.3f" % (epoch+1, i+1, (len(train_dataset) - 1) // opt.batch_size + 1, loss.cpu().item()*labels.size(0)))
         
         train_loss /= len(train_dataset)
