@@ -62,8 +62,8 @@ def main(opt):
 
             predictions = model(images)
 
-            print('output:', predictions.shape)
-            print('labels:', labels.shape)
+            # print('output:', predictions.shape)
+            # print('labels:', labels.shape)
 
             loss = criterion(predictions, labels)
             loss.backward()
