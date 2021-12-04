@@ -4,25 +4,25 @@ from torch.utils.data import Dataset
 import h5py
 import os
 from utils import get_file_list
-# TRAIN_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/train_01/",
-#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_02/",
-#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_01/",
-#                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_02/"]
-# TEST_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/test_01/"]
-# VAL_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/val_01/"]
+TRAIN_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/train_01/",
+                       "/home/newdisk/yanqiao/dataset/cnn_denoising/train_02/",
+                       "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_01/",
+                       "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_02/"]
+TEST_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/test_01/"]
+VAL_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/val_01/"]
 
 
-TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/",
-                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_02/",
-                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_01/",
-                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_02/"]
-TEST_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/test_01/"]
-VAL_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/val_01/"]
+# TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/",
+#                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_02/",
+#                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_01/",
+#                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_02/"]
+# TEST_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/test_01/"]
+# VAL_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/val_01/"]
 
 
 
 def normalize(x):
-    return ( 255 * (x-np.min(x)) / (np.max(x)-np.min(x)) ).astype(np.uint8)
+    return (255*x).astype(np.uint8) if x.max()==x.min() else ( 255 * (x-x.max()) / (x.max()-x.min()) ).astype(np.uint8)
 
 class DeNoiseDataset(Dataset):
     def __init__(self, mode):
@@ -49,7 +49,8 @@ class DeNoiseDataset(Dataset):
         file_path = self.file_list[idx]
         distance_m_1, intensity_1, labels_1 = self.load_hdf5_file(file_path)
         image =  np.concatenate((distance_m_1, intensity_1)).reshape((2,32,400))
-        label = labels_1.astype(np.uint8)
+        # label = labels_1.astype(np.uint8)
+        label = labels_1
 
         return torch.from_numpy(image).type(torch.torch.FloatTensor), torch.from_numpy(label).type(torch.torch.FloatTensor)
     
@@ -66,8 +67,9 @@ class DeNoiseDataset(Dataset):
         # sensorX_1 = normalize(sensorX_1)
         # sensorY_1 = normalize(sensorY_1)
         # sensorZ_1 = normalize(sensorZ_1)
-        distance_m_1 = normalize(distance_m_1)
-        intensity_1 = normalize(intensity_1)
+        # distance_m_1 = normalize(distance_m_1)
+        # intensity_1 = normalize(intensity_1)
+
         return distance_m_1, intensity_1, process_label(labels_1)
 
 def process_label(labels):
