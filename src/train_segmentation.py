@@ -25,7 +25,6 @@ if os.path.exists(result_path):
 
 def main(opt):
 
-
     # lodar dataset & dataloader
     train_dataset = DeNoiseDataset(mode='train')
     test_dataset = DeNoiseDataset(mode='test')
@@ -53,7 +52,6 @@ def main(opt):
         train_loss = 0.0
         valid_loss = 0.0
         
-
         # train
         for i, data in enumerate(train_dataloader, 0):
             images, labels = data
@@ -61,9 +59,6 @@ def main(opt):
             optimizer.zero_grad()
 
             predictions = model(images)
-
-            # print('output:', predictions.shape)
-            # print('labels:', labels.shape)
 
             loss = criterion(predictions, labels)
             loss.backward()
@@ -79,7 +74,6 @@ def main(opt):
         with open(result_path, 'a') as f:
             f.write('\n epoch:{}, train_loss:{:.4f}'.format(epoch+1, train_loss))
             f.close()
-
 
         # validation
         model.eval()
@@ -133,7 +127,7 @@ def main(opt):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--batch_size', type=int, default=32, help='input batch size')
+        '--batch_size', type=int, default=20, help='input batch size')
     parser.add_argument(
         '--epochs', type=int, default=1, help='number of epochs to train for')
     

@@ -1,6 +1,6 @@
 import numpy as np
 import math
-
+import os
 CONFIG = {
     'fov_up': 20,
     'fov_down': -20,
@@ -19,7 +19,15 @@ fov_down_rad = CONFIG['fov_down'] / 180 * math.pi
 fov_rad = abs(fov_up_rad) + abs(fov_down_rad) 
 
 def normalize(x):
-    return (x - x.min()) / (x.max() - x.min())
+    return x if x.max()==x.min() else (x - x.min()) / (x.max() - x.min())
+
+def get_file_list(root_dir_list):
+    file_list = []
+    for root_dir in root_dir_list:
+        for dir, root, files in os.walk(root_dir):
+            for file in files:
+                file_list.append(dir+'/'+file)
+    return file_list
 
 def lidar_to_image(X_list, Y_list, Z_list, Distance, Intensity):
     # input lidar points: array

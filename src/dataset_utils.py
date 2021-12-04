@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import h5py
 import os
-
+from utils import get_file_list
 # TRAIN_ROOT_DIR_LIST = ["/home/newdisk/yanqiao/dataset/cnn_denoising/train_01/",
 #                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_02/",
 #                        "/home/newdisk/yanqiao/dataset/cnn_denoising/train_road_01/",
@@ -20,13 +20,6 @@ TEST_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_den
 VAL_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/val_01/"]
 
 
-def get_file_list(root_dir_list):
-    file_list = []
-    for root_dir in root_dir_list:
-        for dir, root, files in os.walk(root_dir):
-            for file in files:
-                file_list.append(dir+'/'+file)
-    return file_list
 
 def normalize(x):
     return ( 255 * (x-np.min(x)) / (np.max(x)-np.min(x)) ).astype(np.uint8)
@@ -75,7 +68,6 @@ class DeNoiseDataset(Dataset):
         # sensorZ_1 = normalize(sensorZ_1)
         distance_m_1 = normalize(distance_m_1)
         intensity_1 = normalize(intensity_1)
-        # labels_1 -= 99
         return distance_m_1, intensity_1, process_label(labels_1)
 
 def process_label(labels):

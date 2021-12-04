@@ -9,25 +9,35 @@ from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import PointField
 from std_msgs.msg import Header
-from utils import normalize
+from utils import get_file_list, normalize
 import cv2
+import os
+
+TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/",
+                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_02/",
+                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_01/",
+                       "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_02/"]
+
+TEST_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/test_01/"]
+
+VAL_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/val_01/"]
 
 
-PATH = "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/test_01/2018-11-29_101343_Static2-Clear/"
 COLOR_LABEL_MAPPING = {
     0: [0, 0, 0],       # no lable
     100: [0, 0, 0],     # valid / clear  -> 0
     101: [255, 0, 0], # rain             -> 1
     102: [0, 0, 255], # fog              -> 2
 }
-MAX_FRAMES = 10
+
+MAX_FRAMES = 99999999999
 
 class RosPublisher(object):
-    def __init__(self, color_label_mapping=COLOR_LABEL_MAPPING, path=PATH, max_frames=MAX_FRAMES) -> None:
+    def __init__(self, color_label_mapping=COLOR_LABEL_MAPPING, dir_list=TRAIN_ROOT_DIR_LIST, max_frames=MAX_FRAMES) -> None:
         super().__init__()
         """initialize ros python api with bode 'RosPublisher' and set hdf5 channel names"""
         self.color_label_mapping = color_label_mapping
-        self.path = path
+        self.path = get_file_list(dir_list)
         self.max_frames = max_frames
 
         rospy.init_node('ros_publisher_pointcloud')
@@ -46,35 +56,21 @@ class RosPublisher(object):
         self.intensity_1 = None
         self.labels_1 = None
 
-        #fps, w, h = 2, 400, 32
-        #save_path = '../intensity.avi'
-        #self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'), fps, (w, h))
-
         # 读入数据格式 array 32 * 400
         self.load_data()
          
     
     def load_data(self):
-        files = sorted(glob.glob(self.path + '*.hdf5'))
-        #print('Directory {} contains are {} hdf5-files'.format(self.path, len(files)))
+        for frame, file  in enumerate(self.path):
+            # load file
+            self.load_hdf5_file(file)
+            self.publish()
 
-        if len(files) == 0:
-            print('Please check the input dir {}. Could not find any hdf5-file'.format(self.path))
-        else:
-            #print('Start publihsing the first {} frames...'.format(self.max_frames))
-            for frame, file in enumerate(files):
-                #print('{:04d} / {}'.format(frame, file))
+            intensity_img = normalize(self.intensity_1)
+            range_img = normalize(self.distance_m_1)
+            if frame > self.max_frames:
+                break
 
-                # load file
-                self.load_hdf5_file(file)
-                self.publish()
-
-                intensity_img = normalize(self.intensity_1)
-                range_img = normalize(self.distance_m_1)
-
-                
-            #     self.vid_writer.write(np.uint8(255*intensity_img))
-            # self.vid_writer.release()
         print('### End of PointCloudDeNoising visualization')
 
 
@@ -147,7 +143,7 @@ class RosPublisher(object):
             self.distance_m_1 = hdf5.get('distance_m_1')[()]
             self.intensity_1 = hdf5.get('intensity_1')[()]
             self.labels_1 = hdf5.get('labels_1')[()]
-
+        
 
 
     
