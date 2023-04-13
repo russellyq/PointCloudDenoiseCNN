@@ -8,12 +8,9 @@ import numpy as np
 from torch.utils.data.dataloader import DataLoader
 from dataset_utils import DeNoiseDataset
 from weathnet import WeatherNet
-from utils import mIoU
 from torch.autograd import Variable
 from torchvision.transforms import transforms
 import datetime
-
-
 os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 if torch.cuda.is_available():
@@ -22,26 +19,33 @@ else:
     DEVICE = torch.device('cpu')
 
 result_path= './result.txt'
+
 if os.path.exists(result_path):
     os.remove(result_path)
 
 
 def main(opt):
-    with open(result_path, 'a') as f:
-        f.write(''.format(datetime.datetime.now()))
-        f.close()
 
     # lodar dataset & dataloader
     train_dataset = DeNoiseDataset(mode='train')
-    test_dataset = DeNoiseDataset(mode='test')
     val_dataset = DeNoiseDataset(mode='val')
 
+    with open(result_path, 'a') as f:
+        f.write(str(datetime.datetime.now()))
+        f.write('\n number of train data: {:d}\n'.format(len(train_dataset)))
+        f.write('\n number of validation data: {:d}\n'.format(len(val_dataset)))
+        f.close()
+
     train_dataloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=True)
 
     # network
     model = WeatherNet()
+
+    if os.path.exists(opt.checkpoint):
+        checkpoint = torch.load(opt.checkpoint)
+        model.load_state_dict(checkpoint)
+        print('Loading saved model !')
 
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
@@ -51,12 +55,13 @@ def main(opt):
     # loss function
     criterion = nn.CrossEntropyLoss()
 
-    min_valid_loss = np.inf
+    LEARNING_RATE = opt.learning_rate
 
-    LEARNING_RATE =  opt.learning_rate
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.999), eps=1e-8)
+    min_valid_loss = np.inf
     
     for epoch in range(opt.epochs):  
+
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.999), eps=1e-8)        
         
         train_loss = 0.0
         valid_loss = 0.0
@@ -107,9 +112,11 @@ def main(opt):
         if min_valid_loss > valid_loss:
             
             print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
-            save_name = '../checkpoints/saved_model_' +str(epoch) + '.pth'
+            save_name = '../checkpoints/saved_model_' +str(epoch+1) + '.pth'
             torch.save(model.module.state_dict(), save_name)
             min_valid_loss = valid_loss
+        
+        LEARNING_RATE = LEARNING_RATE * 0.9
         
 
 # LEARNING_RATE:
@@ -124,7 +131,9 @@ if __name__ == "__main__":
     parser.add_argument(
         '--epochs', type=int, default=50, help='number of epochs to train for')
     parser.add_argument(
-        '--learning_rate', type=float, default=1e-3)
+        '--learning_rate', type=float, default=4e-8, help='learning rate')
+    parser.add_argument(
+        '--checkpoint', type=str, default='../checkpoints/saved_model.pth', help='checkpoint file')
     opt = parser.parse_args()
     print(opt)
     main(opt)

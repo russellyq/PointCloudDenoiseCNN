@@ -13,7 +13,7 @@ from utils import get_file_list, normalize
 import cv2
 import os
 
-TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/",
+TRAIN_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_01/2018-11-29_154253_Static1-Day-Rain15",
                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_02/",
                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_01/",
                        "/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/train_road_02/"]
@@ -22,15 +22,16 @@ TEST_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_den
 
 VAL_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/val_01/"]
 
+PREDICTION_ROOT_DIR_LIST = ["/media/yq-robot/Seagate Backup Plus Drive/dataset/cnn_denoise/cnn_denoising/our_data_predictions/our_data/velodyne/"]
 
 COLOR_LABEL_MAPPING = {
     0: [0, 0, 0],       # no lable
     100: [0, 0, 0],     # valid / clear  -> 0
-    101: [255, 0, 0], # rain             -> 1
-    102: [0, 0, 255], # fog              -> 2
+    101: [255, 0, 0], # rain             -> 1 red
+    102: [0, 255, 0], # fog              -> 2 green
 }
 
-MAX_FRAMES = 99999999999
+MAX_FRAMES = 286
 
 class RosPublisher(object):
     def __init__(self, color_label_mapping=COLOR_LABEL_MAPPING, dir_list=TRAIN_ROOT_DIR_LIST, max_frames=MAX_FRAMES) -> None:
@@ -41,11 +42,8 @@ class RosPublisher(object):
         self.max_frames = max_frames
 
         rospy.init_node('ros_publisher_pointcloud')
-        self.rostime = rospy.Time.now()
         self.ros_rate = rospy.Rate(10)
         self.ros_publisher = rospy.Publisher('/pointcloud', PointCloud2, queue_size=1)
-        self.r = rospy.Rate(10)
-
 
         # define hdf5 data format
         self.channels = ['labels_1', 'distance_m_1', 'intensity_1', 'sensorX_1', 'sensorY_1', 'sensorZ_1']
@@ -56,22 +54,42 @@ class RosPublisher(object):
         self.intensity_1 = None
         self.labels_1 = None
 
+        self.idx = 0
+
         # 读入数据格式 array 32 * 400
-        self.load_data()
-         
+        # self.load_data()
+
+        self.publish_data()
     
-    def load_data(self):
-        for frame, file  in enumerate(self.path):
-            # load file
-            self.load_hdf5_file(file)
-            self.publish()
+    def publish_data(self):
+        while not rospy.is_shutdown():
+            file = self.path[self.idx]
+            self.load_data(file)
+            self.ros_rate.sleep()
+            self.idx += 1
+            if self.idx > len(self.path):
+                self.idx = 0
 
-            intensity_img = normalize(self.intensity_1)
-            range_img = normalize(self.distance_m_1)
-            if frame > self.max_frames:
-                break
+         
+    def load_data(self, file):
+        self.load_hdf5_file(file)
+        self.publish()
 
-        print('### End of PointCloudDeNoising visualization')
+
+
+
+    # def load_data(self):
+    #     for frame, file  in enumerate(self.path):
+    #         # load file
+    #         self.load_hdf5_file(file)
+    #         self.publish()
+
+    #         intensity_img = normalize(self.intensity_1)
+    #         range_img = normalize(self.distance_m_1)
+    #         if frame > self.max_frames:
+    #             break
+
+    #     print('### End of PointCloudDeNoising visualization')
 
 
 
@@ -121,6 +139,7 @@ class RosPublisher(object):
 
         cloud = pc2.create_cloud(header, fields, points)
         self.ros_publisher.publish(cloud)
+        rospy.loginfo('PushPointCloud')
         
 
 
@@ -143,14 +162,11 @@ class RosPublisher(object):
             self.distance_m_1 = hdf5.get('distance_m_1')[()]
             self.intensity_1 = hdf5.get('intensity_1')[()]
             self.labels_1 = hdf5.get('labels_1')[()]
-        
-
-
-    
 
 if __name__ == "__main__":
     print('### start PointCloudDeNoising visualization')
     data = RosPublisher()
+    # rospy.spin()
 
 # #!/usr/bin/python3
 # """

@@ -1,19 +1,13 @@
 import numpy as np
 import math
 import os
+
 CONFIG = {
     'fov_up': 20,
     'fov_down': -20,
     'number': 32,
     'img_width': 512
 }
-
-LABEL_CLASS_MAPPING = {
-    'clear': 0,           # valid / clear  -> 0
-    'rain': 1, # rain             -> 1
-    'fog': 2, # fog              -> 2
-}
-
 fov_up_rad = CONFIG['fov_up'] / 180 * math.pi
 fov_down_rad = CONFIG['fov_down'] / 180 * math.pi
 fov_rad = abs(fov_up_rad) + abs(fov_down_rad) 
@@ -67,20 +61,6 @@ def lidar_to_image(X_list, Y_list, Z_list, Distance, Intensity):
     return (255*range_img).astype(np.uint8), (255*intensity_img).astype(np.uint8)
     # return 255*normalize(range_img).astype(np.uint8), 255*normalize(intensity_img).astype(np.uint8)
 
-def mIoU(preds, labels, class_name='clear'):
-    intersction = 0
-    union = 0
-    label = LABEL_CLASS_MAPPING[class_name]
-    for i, j in zip(preds.flatten(), labels.flatten()):
-        print(i, j)
-        if i == label and j == label:
-            intersction += 1
-        if i == label or j == label:
-            union +=1
-    if union == 0:
-        return 0
-    return intersction / union
-
 
 
 #得到混淆矩阵
@@ -116,7 +96,8 @@ def label_accuracy_score(label_trues, label_preds, n_class):
 
     freq = hist.sum(axis=1) / hist.sum()
     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
-    return acc, acc_cls, mean_iu, fwavacc
+    # return acc, acc_cls, mean_iu, fwavacc
+    return acc, acc_cls, iu, fwavacc
 
 class Evaluator(object):
     def __init__(self, num_class):
@@ -190,3 +171,5 @@ class Evaluator(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
+
+
