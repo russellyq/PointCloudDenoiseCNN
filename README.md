@@ -6,4 +6,4 @@ An implementation of point cloud segmentation.
 
 ## Demo
 
-[demo](doc/lidar_defog%2000_00_00-00_00_30.gif)
+![](doc/lidar_defog%2000_00_00-00_00_30.gif)
